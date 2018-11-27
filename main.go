@@ -13,6 +13,7 @@ var carry int
 var maxScavenge int
 var verbose bool
 var debug bool
+var mode int
 
 type raubzug struct {
 	timeFact  float64
@@ -23,6 +24,7 @@ type raubzug struct {
 func main() {
 	flag.IntVar(&carry, "t", 1000, "Die Gesamte Tragekapazität der freien Einheiten, die aufgeteilt werden soll")
 	flag.IntVar(&maxScavenge, "m", 4, "Falls noch nicht alle Raubzüge freigeschalten wurden, kann hier eine Zahl von 1 bis 4 übergeben werden")
+	flag.IntVar(&mode, "mode", 0, "Der Modus, der für die Berechnung verwendet werden soll. 0) Alles berechnen 1) Maximale Ressourcen pro Stunde 2) Identische Zeit")
 	flag.BoolVar(&verbose, "verbose", false, "Mehr Informationen ausgeben")
 	flag.BoolVar(&debug, "debug", false, "Technische Informationen ausgeben")
 	flag.Parse()
@@ -82,30 +84,65 @@ func main() {
 		close(ch)
 	}()
 
-	var score float64 = 0
-	var bestThing []int
+	var bestScore float64 = 0
+	var bestScoreThing []int
+	var bestTimeDifference float64 = 9999999999999999999
+	var bestTimeDifferenceScore float64 = 0
+	var bestTimeDifferenceThing []int
 	for thing := range ch {
 		var thisScore float64 = 0
+		var thisMinTime float64 = 9999999999999999999
+		var thisMaxTime float64 = 0
 		for i := 0; i < len(thing); i++ {
-			_, _, sc := scavenges[i].calc(thing[i])
+			t, _, sc := scavenges[i].calc(thing[i])
+			if t > thisMaxTime {
+				thisMaxTime = t
+			}
+			if t < thisMinTime {
+				thisMinTime = t
+			}
 			thisScore += sc
 		}
 
-		if thisScore > score {
-			if verbose {
-				fmt.Printf("%7.0f res/h with config %v\n", thisScore, thing)
+		if mode == 0 || mode == 2 {
+			if (thisMaxTime-thisMinTime) < bestTimeDifference && len(thing) == maxScavenge {
+				if verbose {
+					fmt.Printf("%7.0f with config %v\n", thisMaxTime-thisMinTime, thing)
+				}
+				bestTimeDifference = thisMaxTime - thisMinTime
+				bestTimeDifferenceScore = thisScore
+				bestTimeDifferenceThing = thing
 			}
-			score = thisScore + 0.01
-			bestThing = thing
+		}
+
+		if mode == 0 || mode == 1 {
+			if thisScore > bestScore {
+				if verbose {
+					fmt.Printf("%7.0f res/h with config %v\n", thisScore, thing)
+				}
+				bestScore = thisScore + 0.01
+				bestScoreThing = thing
+			}
 		}
 	}
 
-	for i := 0; i < len(bestThing); i++ {
-		seconds, carry, sc := scavenges[i].calc(bestThing[i])
-		userTime := time.Duration(seconds) * time.Second
-		fmt.Printf("Scavenge %s: %8d @ %7.0f res/h (%.0f resources in %s)\n", scavenges[i].name, bestThing[i], sc, carry, userTime.String())
+	if mode == 0 || mode == 1 {
+		for i := 0; i < len(bestScoreThing); i++ {
+			seconds, carry, sc := scavenges[i].calc(bestScoreThing[i])
+			userTime := time.Duration(seconds) * time.Second
+			fmt.Printf("Scavenge %s: %8d @ %7.0f res/h (%.0f resources in %s)\n", scavenges[i].name, bestScoreThing[i], sc, carry, userTime.String())
+		}
+		fmt.Printf("Total                @ %7.0f res/h:\n", bestScore)
 	}
-	fmt.Printf("Total                @ %7.0f res/h:\n", score)
+
+	if mode == 0 || mode == 2 {
+		for i := 0; i < len(bestTimeDifferenceThing); i++ {
+			seconds, carry, sc := scavenges[i].calc(bestTimeDifferenceThing[i])
+			userTime := time.Duration(seconds) * time.Second
+			fmt.Printf("Scavenge %s: %8d @ %7.0f res/h (%.0f resources in %s)\n", scavenges[i].name, bestTimeDifferenceThing[i], sc, carry, userTime.String())
+		}
+		fmt.Printf("Total                @ %7.0f res/h:\n", bestTimeDifferenceScore)
+	}
 }
 
 func (scav raubzug) calc(total int) (float64, float64, float64) {
