@@ -71,7 +71,7 @@ func main() {
 	})
 	scavenges = append(scavenges, raubzug{
 		name:      "4",
-		timeFact:  10,
+		timeFact:  7.5,
 		carryFact: 0.75,
 	})
 
