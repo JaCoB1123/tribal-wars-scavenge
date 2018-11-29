@@ -127,21 +127,23 @@ func main() {
 	}
 
 	if mode == 0 || mode == 1 {
+		fmt.Println("Maximum Ressources per Minute:")
 		for i := 0; i < len(bestScoreThing); i++ {
 			seconds, carry, sc := scavenges[i].calc(bestScoreThing[i])
 			userTime := time.Duration(seconds) * time.Second
 			fmt.Printf("Scavenge %s: %8d @ %7.0f res/h (%.0f resources in %s)\n", scavenges[i].name, bestScoreThing[i], sc, carry, userTime.String())
 		}
-		fmt.Printf("Total                @ %7.0f res/h:\n", bestScore)
+		fmt.Printf("Total                @ %7.0f res/h:\n\n", bestScore)
 	}
 
 	if mode == 0 || mode == 2 {
+		fmt.Println("Identical Time:")
 		for i := 0; i < len(bestTimeDifferenceThing); i++ {
 			seconds, carry, sc := scavenges[i].calc(bestTimeDifferenceThing[i])
 			userTime := time.Duration(seconds) * time.Second
 			fmt.Printf("Scavenge %s: %8d @ %7.0f res/h (%.0f resources in %s)\n", scavenges[i].name, bestTimeDifferenceThing[i], sc, carry, userTime.String())
 		}
-		fmt.Printf("Total                @ %7.0f res/h:\n", bestTimeDifferenceScore)
+		fmt.Printf("Total                @ %7.0f res/h:\n\n", bestTimeDifferenceScore)
 	}
 }
 
