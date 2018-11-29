@@ -44,7 +44,7 @@ func main() {
 
 	if carry%step != 0 {
 		oldCarry := carry
-		carry -= carry%step + step
+		carry += step - carry%step
 		fmt.Printf("Tragekapazität %d ist nicht durch %d teilbar, wurde auf %d erhöht\n", oldCarry, step, carry)
 	}
 
